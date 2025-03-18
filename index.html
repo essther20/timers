@@ -67,8 +67,8 @@
         }
         .timer-container {
             display: flex;
-            justify-content: space-between; /* 좌우 정렬 */
-            align-items: center; /* 세로 가운데 정렬 */
+            justify-content: space-between;
+            align-items: center;
             border: 1px solid #444;
             border-radius: 8px;
             padding: 15px;
@@ -81,11 +81,11 @@
         }
         .info-container {
             display: flex;
-            flex-direction: column; /* 세로 정렬 */
-            align-items: flex-start; /* 왼쪽 정렬 */
+            flex-direction: column;
+            align-items: flex-start;
         }
         .timer-display {
-            font-size: 48px; /* 타이머 크기 증가 */
+            font-size: 48px;
             font-weight: bold;
             margin-bottom: 10px;
             font-family: 'Black Han Sans', sans-serif;
@@ -155,7 +155,7 @@
             const minutes = parseInt(input.slice(2, 4), 10);
             const seconds = parseInt(input.slice(4, 6), 10);
 
-            let totalSeconds = (hours * 3600) + (minutes * 60) + seconds; // 5분 추가
+            let totalSeconds = (hours * 3600) + (minutes * 60) + seconds + 300;
 
             const timerElement = document.getElementById('timerTemplate').content.cloneNode(true);
             const timerDisplay = timerElement.querySelector('.timer-display');
@@ -167,8 +167,8 @@
 
             deleteButton.addEventListener('click', function() {
                 clearInterval(timerInterval);
-                timerElement.remove(); // 타이머 리스트에서 제거
-                timers = timers.filter(timer => timer.intervalId !== timerInterval); // 배열에서 삭제
+                timerElement.remove();
+                timers = timers.filter(timer => timer.intervalId !== timerInterval);
             });
 
             const timerInterval = setInterval(function() {
@@ -176,8 +176,8 @@
                     clearInterval(timerInterval);
                     const note = noteInput.value ? noteInput.value + ' ' : '';
                     notifyUser(note + '타이머 종료!');
-                    timerElement.remove(); // 타이머 리스트에서 제거
-                    timers = timers.filter(timer => timer.intervalId !== timerInterval); // 배열에서 삭제
+                    timerElement.remove();
+                    timers = timers.filter(timer => timer.intervalId !== timerInterval);
                     return;
                 }
                 totalSeconds--;
@@ -185,7 +185,7 @@
             }, 1000);
 
             timers.push({ intervalId: timerInterval });
-            document.getElementById('timeInput').value = ''; // 입력창 비우기
+            document.getElementById('timeInput').value = '';
         }
 
         function formatTime(totalSeconds) {
