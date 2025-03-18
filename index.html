@@ -4,41 +4,145 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>타이머 설정기</title>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'Pretendard-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Pretendard-Regular', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            width: 80%;
+            background-color: #ffffff;
+            color: #333333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 0 auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
             text-align: center;
-            margin: 50px;
+        }
+        h1 {
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .input-container {
+            background-color: #87CEFA;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
         }
         input {
             padding: 10px;
             font-size: 20px;
-            width: 150px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            color: #333;
         }
         button {
             padding: 10px 20px;
             font-size: 20px;
             margin-left: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #6200ea;
+            color: #ffffff;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
-        .timer {
+        button:hover {
+            background-color: #3700b3;
+        }
+        .timer-container {
+            display: flex;
+            justify-content: space-between; /* 좌우 정렬 */
+            align-items: center; /* 세로 가운데 정렬 */
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #d3d3d3;
+            width: 60%;
+            margin-left: auto;
+            margin-right: auto;
             margin-top: 20px;
-            font-size: 24px;
+            color: #333;
+        }
+        .info-container {
+            display: flex;
+            flex-direction: column; /* 세로 정렬 */
+            align-items: flex-start; /* 왼쪽 정렬 */
+        }
+        .timer-display {
+            font-size: 48px; /* 타이머 크기 증가 */
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-family: 'Black Han Sans', sans-serif;
+            color: #333;
+        }
+        .note-input {
+            width: 120px;
+            height: 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .delete-button {
+            margin-left: 10px;
+            background-color: #ff1744;
+        }
+        .delete-button:hover {
+            background-color: #c8102e;
         }
     </style>
 </head>
 <body>
-    <h1>타이머 설정기</h1>
-    <input type="text" id="timeInput" placeholder="hhmmss" maxlength="6">
-    <button id="setTimerButton">타이머 설정</button>
-    <div id="timersContainer"></div>
+    <div class="container">
+        <h1>타이머 설정기</h1>
+        <div class="input-container">
+            <input type="text" id="timeInput" placeholder="hhmmss" maxlength="6">
+            <button id="setTimerButton">타이머 설정</button>
+        </div>
+        <div id="timersContainer"></div>
+
+        <template id="timerTemplate">
+            <div class="timer-container">
+                <div class="info-container">
+                    <span class="timer-display"></span>
+                    <input class="note-input" placeholder="메모 입력">
+                </div>
+                <button class="delete-button">삭제</button>
+            </div>
+        </template>
+    </div>
 
     <script>
-        // 알림 권한 요청
+        let timers = [];
+
         if (Notification.permission === "default") {
             Notification.requestPermission();
         }
 
-        document.getElementById('setTimerButton').addEventListener('click', function() {
+        document.getElementById('setTimerButton').addEventListener('click', addTimer);
+        document.getElementById('timeInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                addTimer();
+            }
+        });
+
+        function addTimer() {
             const input = document.getElementById('timeInput').value;
             const regex = /^\d{6}$/;
 
@@ -52,25 +156,37 @@
             const seconds = parseInt(input.slice(4, 6), 10);
 
             let totalSeconds = (hours * 3600) + (minutes * 60) + seconds; // 5분 추가
-            const timerId = Date.now(); // 고유한 타이머 ID
 
-            const timerElement = document.createElement('div');
-            timerElement.classList.add('timer');
-            timerElement.id = timerId;
-            timerElement.textContent = `타이머: ${formatTime(totalSeconds)}`;
+            const timerElement = document.getElementById('timerTemplate').content.cloneNode(true);
+            const timerDisplay = timerElement.querySelector('.timer-display');
+            const noteInput = timerElement.querySelector('.note-input');
+            const deleteButton = timerElement.querySelector('.delete-button');
+
+            timerDisplay.textContent = formatTime(totalSeconds);
             document.getElementById('timersContainer').appendChild(timerElement);
 
-            const countdown = setInterval(function() {
+            deleteButton.addEventListener('click', function() {
+                clearInterval(timerInterval);
+                timerElement.remove(); // 타이머 리스트에서 제거
+                timers = timers.filter(timer => timer.intervalId !== timerInterval); // 배열에서 삭제
+            });
+
+            const timerInterval = setInterval(function() {
                 if (totalSeconds <= 0) {
-                    clearInterval(countdown);
-                    notifyUser();
-                    timerElement.remove(); // 타이머 삭제
+                    clearInterval(timerInterval);
+                    const note = noteInput.value ? noteInput.value + ' ' : '';
+                    notifyUser(note + '타이머 종료!');
+                    timerElement.remove(); // 타이머 리스트에서 제거
+                    timers = timers.filter(timer => timer.intervalId !== timerInterval); // 배열에서 삭제
                     return;
                 }
                 totalSeconds--;
-                timerElement.textContent = `타이머: ${formatTime(totalSeconds)}`;
+                timerDisplay.textContent = formatTime(totalSeconds);
             }, 1000);
-        });
+
+            timers.push({ intervalId: timerInterval });
+            document.getElementById('timeInput').value = ''; // 입력창 비우기
+        }
 
         function formatTime(totalSeconds) {
             const hours = Math.floor(totalSeconds / 3600);
@@ -79,11 +195,11 @@
             return `${String(hours).padStart(2, '0')}시간 ${String(minutes).padStart(2, '0')}분 ${String(seconds).padStart(2, '0')}초`;
         }
 
-        function notifyUser() {
+        function notifyUser(message) {
             if (Notification.permission === "granted") {
-                new Notification('타이머 종료!');
+                new Notification(message);
             } else if (Notification.permission === "denied") {
-                alert('알림 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.');
+                alert('알림 권한이 거부되었습니다.');
             }
         }
     </script>
