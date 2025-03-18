@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>타이머 설정기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        input {
+            padding: 10px;
+            font-size: 20px;
+            width: 150px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 20px;
+            margin-left: 10px;
+        }
+        .timer {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <h1>타이머 설정기</h1>
+    <input type="text" id="timeInput" placeholder="hhmmss" maxlength="6">
+    <button id="setTimerButton">타이머 설정</button>
+    <div id="timersContainer"></div>
+
+    <script>
+        // 알림 권한 요청
+        if (Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+
+        document.getElementById('setTimerButton').addEventListener('click', function() {
+            const input = document.getElementById('timeInput').value;
+            const regex = /^\d{6}$/;
+
+            if (!regex.test(input)) {
+                alert('6자리 숫자를 입력해주세요.');
+                return;
+            }
+
+            const hours = parseInt(input.slice(0, 2), 10);
+            const minutes = parseInt(input.slice(2, 4), 10);
+            const seconds = parseInt(input.slice(4, 6), 10);
+
+            let totalSeconds = (hours * 3600) + (minutes * 60) + seconds; // 5분 추가
+            const timerId = Date.now(); // 고유한 타이머 ID
+
+            const timerElement = document.createElement('div');
+            timerElement.classList.add('timer');
+            timerElement.id = timerId;
+            timerElement.textContent = `타이머: ${formatTime(totalSeconds)}`;
+            document.getElementById('timersContainer').appendChild(timerElement);
+
+            const countdown = setInterval(function() {
+                if (totalSeconds <= 0) {
+                    clearInterval(countdown);
+                    notifyUser();
+                    timerElement.remove(); // 타이머 삭제
+                    return;
+                }
+                totalSeconds--;
+                timerElement.textContent = `타이머: ${formatTime(totalSeconds)}`;
+            }, 1000);
+        });
+
+        function formatTime(totalSeconds) {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(hours).padStart(2, '0')}시간 ${String(minutes).padStart(2, '0')}분 ${String(seconds).padStart(2, '0')}초`;
+        }
+
+        function notifyUser() {
+            if (Notification.permission === "granted") {
+                new Notification('타이머 종료!');
+            } else if (Notification.permission === "denied") {
+                alert('알림 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.');
+            }
+        }
+    </script>
+</body>
+</html>
