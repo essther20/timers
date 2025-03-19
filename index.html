@@ -41,7 +41,7 @@
             if (timeInput.length === 6) {
                 const seconds = parseInt(timeInput.substr(0, 2)) * 3600 +
                                 parseInt(timeInput.substr(2, 2)) * 60 +
-                                parseInt(timeInput.substr(4, 2)) + 300; // 5분 추가
+                                parseInt(timeInput.substr(4, 2)); // 5분 추가
 
                 const timerId = Date.now();
                 timers.push({ id: timerId, seconds: seconds, memo: '', intervalId: null });
