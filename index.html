@@ -3,204 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>타이머 설정기</title>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap" rel="stylesheet">
-    <style>
-        @font-face {
-            font-family: 'Pretendard-Regular';
-            src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
-            font-weight: 400;
-            font-style: normal;
-        }
-
-        body {
-            font-family: 'Pretendard-Regular', sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            width: 80%;
-            background-color: #ffffff;
-            color: #333333;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 0 auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-            text-align: center;
-        }
-        h1 {
-            font-family: 'Black Han Sans', sans-serif;
-            font-size: 36px;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        .input-container {
-            background-color: #87CEFA;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        input {
-            padding: 10px;
-            font-size: 20px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            background-color: #f0f0f0;
-            color: #333;
-        }
-        button {
-            padding: 10px 20px;
-            font-size: 20px;
-            margin-left: 10px;
-            border: none;
-            border-radius: 5px;
-            background-color: #6200ea;
-            color: #ffffff;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #3700b3;
-        }
-        .timer-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 15px;
-            background-color: #d3d3d3;
-            width: 60%;
-            margin-left: auto;
-            margin-right: auto;
-            margin-top: 20px;
-            color: #333;
-        }
-        .info-container {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        .timer-display {
-            font-size: 48px;
-            font-weight: bold;
-            margin-bottom: 10px;
-            font-family: 'Black Han Sans', sans-serif;
-            color: #333;
-        }
-        .note-input {
-            width: 120px;
-            height: 20px;
-            border: none;
-            border-radius: 5px;
-            background-color: #f0f0f0;
-            color: #333;
-        }
-        .delete-button {
-            margin-left: 10px;
-            background-color: #ff1744;
-        }
-        .delete-button:hover {
-            background-color: #c8102e;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
+    <title>타이머 설정</title>
 </head>
 <body>
     <div class="container">
-        <h1>타이머 설정기</h1>
-        <div class="input-container">
-            <input type="text" id="timeInput" placeholder="hhmmss" maxlength="6">
-            <button id="setTimerButton">타이머 설정</button>
+        <div class="header" id="a">타이머 설정</div>
+        <div class="input-area" id="b">
+            <input type="number" id="timerInput" maxlength="6" placeholder="6자리 숫자 입력">
+            <button id="setTimerBtn">타이머 등록</button>
+            <ul>
+                <li>1. 숫자를 입력한다</li>
+                <li>2. 타이머를 설정한다</li>
+            </ul>
         </div>
-        <div id="timersContainer"></div>
-
-        <template id="timerTemplate">
-            <div class="timer-container">
-                <div class="info-container">
-                    <span class="timer-display"></span>
-                    <input class="note-input" placeholder="메모 입력">
-                </div>
-                <button class="delete-button">삭제</button>
-            </div>
-        </template>
+        <div class="timer-list" id="c">
+            <button id="sortBtn">정렬</button>
+            <div id="timers"></div>
+        </div>
     </div>
 
     <script>
         let timers = [];
+        let sortOrder = 'asc'; // 정렬 기준
 
-        if (Notification.permission === "default") {
-            Notification.requestPermission();
-        }
-
-        document.getElementById('setTimerButton').addEventListener('click', addTimer);
-        document.getElementById('timeInput').addEventListener('keypress', function(event) {
+        document.getElementById('setTimerBtn').onclick = addTimer;
+        document.getElementById('timerInput').onkeypress = function(event) {
             if (event.key === 'Enter') {
                 addTimer();
             }
-        });
+        };
 
         function addTimer() {
-            const input = document.getElementById('timeInput').value;
-            const regex = /^\d{6}$/;
+            const input = document.getElementById('timerInput');
+            const timeInput = input.value;
 
-            if (!regex.test(input)) {
-                alert('6자리 숫자를 입력해주세요.');
-                return;
+            if (timeInput.length === 6) {
+                const seconds = parseInt(timeInput.substr(0, 2)) * 3600 +
+                                parseInt(timeInput.substr(2, 2)) * 60 +
+                                parseInt(timeInput.substr(4, 2)) + 300; // 5분 추가
+
+                const timerId = Date.now();
+                timers.push({ id: timerId, seconds: seconds, memo: '', intervalId: null });
+                input.value = '';
+                renderTimers();
+                startTimer(timerId); // 타이머 시작
+            } else {
+                alert("6자리 숫자를 입력해주세요.");
             }
+        }
 
-            const hours = parseInt(input.slice(0, 2), 10);
-            const minutes = parseInt(input.slice(2, 4), 10);
-            const seconds = parseInt(input.slice(4, 6), 10);
+        function renderTimers() {
+            const timersContainer = document.getElementById('timers');
+            timersContainer.innerHTML = '';
 
-            let totalSeconds = (hours * 3600) + (minutes * 60) + seconds + 300;
-
-            const timerElement = document.getElementById('timerTemplate').content.cloneNode(true);
-            const timerDisplay = timerElement.querySelector('.timer-display');
-            const noteInput = timerElement.querySelector('.note-input');
-            const deleteButton = timerElement.querySelector('.delete-button');
-
-            timerDisplay.textContent = formatTime(totalSeconds);
-            document.getElementById('timersContainer').appendChild(timerElement);
-
-            deleteButton.addEventListener('click', function() {
-                clearInterval(timerInterval);
-                timerElement.remove();
-                timers = timers.filter(timer => timer.intervalId !== timerInterval);
+            timers.forEach(timer => {
+                const timerDiv = document.createElement('div');
+                timerDiv.classList.add('timer-item');
+                timerDiv.innerHTML = `
+                    <div class="timer-memo">
+                        <span id="timer-${timer.id}">${formatTime(timer.seconds)}</span>
+                        <input type="text" placeholder="메모" value="${timer.memo}" onkeypress="updateMemo(event, ${timer.id})">
+                    </div>
+                    <button onclick="deleteTimer(${timer.id})">삭제</button>
+                `;
+                timersContainer.appendChild(timerDiv);
             });
-
-            const timerInterval = setInterval(function() {
-                if (totalSeconds <= 0) {
-                    clearInterval(timerInterval);
-                    const note = noteInput.value ? noteInput.value + ' ' : '';
-                    notifyUser(note + '타이머 종료!');
-                    timerElement.remove();
-                    timers = timers.filter(timer => timer.intervalId !== timerInterval);
-                    return;
-                }
-                totalSeconds--;
-                timerDisplay.textContent = formatTime(totalSeconds);
-            }, 1000);
-
-            timers.push({ intervalId: timerInterval });
-            document.getElementById('timeInput').value = '';
         }
 
-        function formatTime(totalSeconds) {
-            const hours = Math.floor(totalSeconds / 3600);
-            const minutes = Math.floor((totalSeconds % 3600) / 60);
-            const seconds = totalSeconds % 60;
-            return `${String(hours).padStart(2, '0')}시간 ${String(minutes).padStart(2, '0')}분 ${String(seconds).padStart(2, '0')}초`;
-        }
+        function startTimer(timerId) {
+            const timer = timers.find(t => t.id === timerId);
+            const timerElement = document.getElementById(`timer-${timerId}`);
 
-        function notifyUser(message) {
-            if (Notification.permission === "granted") {
-                new Notification(message);
-            } else if (Notification.permission === "denied") {
-                alert('알림 권한이 거부되었습니다.');
+            // 기존 타이머가 있다면 중지
+            if (timer.intervalId) {
+                clearInterval(timer.intervalId);
             }
+
+            timer.intervalId = setInterval(() => {
+                if (timer.seconds <= 0) {
+                    clearInterval(timer.intervalId);
+                    notifyUser();
+                    deleteTimer(timerId); // 타이머 종료 시 삭제
+                } else {
+                    timer.seconds--;
+                    timerElement.innerText = formatTime(timer.seconds); // 즉시 갱신
+                }
+            }, 1000); // 1초마다 감소
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function deleteTimer(timerId) {
+            const timerIndex = timers.findIndex(timer => timer.id === timerId);
+            if (timerIndex !== -1) {
+                clearInterval(timers[timerIndex].intervalId); // 타이머 중지
+                timers.splice(timerIndex, 1); // 타이머 삭제
+                renderTimers();
+            }
+        }
+
+        function updateMemo(event, timerId) {
+            if (event.key === 'Enter') {
+                const memo = event.target.value;
+                const timer = timers.find(t => t.id === timerId);
+                if (timer) {
+                    timer.memo = memo;
+                    renderTimers(); // 메모 업데이트 후 다시 렌더링
+                }
+            }
+        }
+
+        document.getElementById('sortBtn').onclick = function() {
+            if (sortOrder === 'asc') {
+                timers.sort((a, b) => a.seconds - b.seconds);
+                sortOrder = 'desc';
+            } else if (sortOrder === 'desc') {
+                timers.sort((a, b) => b.seconds - a.seconds);
+                sortOrder = 'input';
+            } else {
+                timers.sort((a, b) => a.id - b.id); // 입력 순서로 정렬
+                sortOrder = 'asc';
+            }
+            renderTimers();
+            timers.forEach(timer => startTimer(timer.id)); // 정렬 후 타이머 재시작
+        };
+
+        function notifyUser() {
+            if (Notification.permission === "granted") {
+                new Notification("타이머 종료!");
+            } else if (Notification.permission !== "denied") {
+                Notification.requestPermission().then(permission => {
+                    if (permission === "granted") {
+                        new Notification("타이머 종료!");
+                    }
+                });
+            }
+        }
+
+        // 알림 권한 요청
+        if (Notification.permission === "default") {
+            Notification.requestPermission();
         }
     </script>
 </body>
