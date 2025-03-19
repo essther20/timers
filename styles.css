@@ -1,36 +1,40 @@
 body {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* 상단 정렬 */
     height: 100vh;
     margin: 0;
-    background-color: #f5f5dc; /* 연한 베이지색 */
+    background-color: #121212; /* 어두운 배경색 */
+    color: #ffffff; /* 글자색 흰색 */
+    font-family: 'Arial', sans-serif; /* 기본 글꼴 */
 }
 
 .container {
     width: 80%;
-    background-color: #f5f5dc; /* 연한 베이지색 */
+    background-color: #1e1e1e; /* 어두운 회색 배경색 */
     padding: 20px;
     border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* 그림자 효과 */
 }
 
 .header {
     text-align: center;
-    background-color: #ffcccb; /* 연한 분홍색 */
-    padding: 10px;
+    background-color: #3f3f3f; /* 회색 */
+    padding: 15px;
     border-radius: 5px;
+    font-size: 24px;
 }
 
 .input-area {
-    background-color: #ffffe0; /* 연한 노란색 */
-    padding: 10px;
+    background-color: #2a2a2a; /* 어두운 회색 */
+    padding: 15px;
     margin: 10px 0;
     border-radius: 5px;
 }
 
 .timer-list {
-    background-color: #add8e6; /* 연한 하늘색 */
-    padding: 10px;
+    background-color: #2a2a2a; /* 어두운 회색 */
+    padding: 15px;
     border-radius: 5px;
 }
 
@@ -38,7 +42,10 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
+    background-color: #3f3f3f; /* 회색 */
+    padding: 10px;
+    border-radius: 5px;
 }
 
 .timer-memo {
@@ -49,8 +56,27 @@ body {
 
 input[type="number"], input[type="text"] {
     margin-right: 10px;
+    border-radius: 5px;
+    border: 1px solid #555; /* 경계선 색 */
+    padding: 5px;
+    background-color: #2a2a2a; /* 어두운 회색 */
+    color: #ffffff; /* 글자색 흰색 */
 }
 
 button {
     margin-left: 5px;
+    padding: 5px 10px;
+    background-color: #4caf50; /* 초록색 */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049; /* 호버 시 색상 변경 */
+}
+
+button:active {
+    background-color: #397d3a; /* 클릭 시 색상 변경 */
 }
