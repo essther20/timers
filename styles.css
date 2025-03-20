@@ -71,7 +71,7 @@ input[type="number"], input[type="text"] {
 button {
     margin-left: 5px;
     padding: 5px 10px;
-    background-color: #64b5f6; /* 밝은 파란색 */
+    background-color: #a1d7c9; /* 밝은 민트색 */
     color: white;
     border: none;
     border-radius: 5px;
@@ -80,9 +80,9 @@ button {
 }
 
 button:hover {
-    background-color: #42a5f5; /* 호버 시 색상 변경 */
+    background-color: #79C7B3; /* 호버 시 색상 변경 */
 }
 
 button:active {
-    background-color: #1e88e5; /* 클릭 시 색상 변경 */
+    background-color: #66B8A3; /* 클릭 시 색상 변경 */
 }
