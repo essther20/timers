@@ -18,7 +18,7 @@ function addTimer() {
             parseInt(timeInput.substr(4, 2)) + 300; // 5분 추가
 
         const timerId = Date.now();
-        const timer = { id: timerId, seconds: seconds, memo: '', intervalId: null };
+        const timer = { id: timerId, seconds: seconds, memo: '' };
         timers.push(timer);
         input.value = '';
         renderTimers();
@@ -47,9 +47,8 @@ function renderTimers() {
 }
 
 function startTimer(timer) {
-    timer.intervalId = setInterval(() => {
+    const updateTimer = () => {
         if (timer.seconds <= 0) {
-            clearInterval(timer.intervalId);
             notifyUser(timer.memo);
             deleteTimer(timer.id);
         } else {
@@ -58,8 +57,10 @@ function startTimer(timer) {
             if (timerElement) {
                 timerElement.innerText = formatTime(timer.seconds);
             }
+            setTimeout(updateTimer, 1000); // 1초 후에 다시 호출
         }
-    }, 1000); // 1초마다 감소
+    };
+    updateTimer(); // 첫 호출
 }
 
 function formatTime(seconds) {
@@ -72,7 +73,6 @@ function formatTime(seconds) {
 function deleteTimer(timerId) {
     const timerIndex = timers.findIndex(timer => timer.id === timerId);
     if (timerIndex !== -1) {
-        clearInterval(timers[timerIndex].intervalId); // 타이머 중지
         timers.splice(timerIndex, 1); // 타이머 삭제
         renderTimers();
     }
