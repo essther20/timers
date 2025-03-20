@@ -24,7 +24,6 @@ body {
     padding: 15px;
     border-radius: 5px;
     font-size: 24px;
-    border: 1px solid #ccc; /* 연한 회색 테두리 */
 }
 
 .input-area {
@@ -71,4 +70,19 @@ input[type="number"], input[type="text"] {
 
 button {
     margin-left: 5px;
-    padding: 5
+    padding: 5px 10px;
+    background-color: #64b5f6; /* 밝은 파란색 */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s; /* 부드러운 전환 효과 */
+}
+
+button:hover {
+    background-color: #42a5f5; /* 호버 시 색상 변경 */
+}
+
+button:active {
+    background-color: #1e88e5; /* 클릭 시 색상 변경 */
+}
