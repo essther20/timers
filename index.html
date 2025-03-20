@@ -64,7 +64,7 @@
                 timerDiv.innerHTML = `
                     <div class="timer-memo">
                         <span id="timer-${timer.id}">${formatTime(timer.seconds)}</span>
-                        <input type="text" placeholder="메모" value="${timer.memo}" onkeypress="updateMemo(event, ${timer.id})">
+                        <input type="text" placeholder="메모" value="${timer.memo}" oninput="updateMemo(event, ${timer.id})">
                     </div>
                     <button onclick="deleteTimer(${timer.id})">삭제</button>
                 `;
@@ -74,11 +74,6 @@
 
         function startTimer(timer) {
             const timerElement = document.getElementById(`timer-${timer.id}`);
-
-            // 기존 타이머가 있다면 중지
-            if (timer.intervalId) {
-                clearInterval(timer.intervalId);
-            }
 
             timer.intervalId = setInterval(() => {
                 if (timer.seconds <= 0) {
@@ -109,16 +104,15 @@
         }
 
         function updateMemo(event, timerId) {
-            if (event.key === 'Enter') {
-                const memo = event.target.value;
-                const timer = timers.find(t => t.id === timerId);
-                if (timer) {
-                    timer.memo = memo;
-                }
+            const memo = event.target.value;
+            const timer = timers.find(t => t.id === timerId);
+            if (timer) {
+                timer.memo = memo; // 메모 업데이트
             }
         }
 
         document.getElementById('sortBtn').onclick = function() {
+            // 정렬 기준에 따라 메모를 유지한 채로 정렬
             if (sortOrder === 'asc') {
                 timers.sort((a, b) => a.seconds - b.seconds);
                 sortOrder = 'desc';
@@ -129,7 +123,7 @@
                 timers.sort((a, b) => a.id - b.id); // 입력 순서로 정렬
                 sortOrder = 'asc';
             }
-            renderTimers();
+            renderTimers(); // 메모가 유지되도록 다시 렌더링
         };
 
         function notifyUser(memo) {
