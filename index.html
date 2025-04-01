@@ -78,6 +78,12 @@
             margin-bottom: 15px;
         }
         
+        .sort-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
         .sort-button {
             padding: 10px 20px;
             background-color: #5cb85c;
@@ -91,6 +97,12 @@
         
         .sort-button:hover {
             background-color: #4cae4c;
+        }
+        
+        .sort-status {
+            color: #333;
+            font-size: 14px;
+            font-weight: bold;
         }
         
         .timers-section {
@@ -160,7 +172,10 @@
             <button id="registerBtn">등록</button>
         </div>
         <p class="format-guide">형식: HHMMSS (예: 011234 = 1시간 12분 34초 + 5분 = 1시간 17분 34초)</p>
-        <button id="sortBtn" class="sort-button">정렬</button>
+        <div class="sort-container">
+            <button id="sortBtn" class="sort-button">정렬</button>
+            <span id="sortStatus" class="sort-status">등록순</span>
+        </div>
     </section>
     
     <section class="timers-section">
@@ -179,6 +194,8 @@
             let timers = {};
             let timerIdCounter = 0;
             let sortMode = 0; // 0: 등록순, 1: 남은 시간 짧은 순, 2: 남은 시간 긴 순
+            const sortStatusText = ["등록순", "오름차순", "내림차순"];
+            const sortStatusElement = document.getElementById('sortStatus');
             
             // 웹 워커 생성
             const timerWorker = new Worker(
@@ -295,6 +312,7 @@
             // 정렬 토글 함수
             function toggleSortTimers() {
                 sortMode = (sortMode + 1) % 3;
+                sortStatusElement.textContent = sortStatusText[sortMode];
                 sortTimers();
             }
             
@@ -461,8 +479,27 @@
                 const timerCard = document.querySelector(`.timer-card[data-id="${id}"]`);
                 
                 if (timerElement && timerCard) {
+                    // 메모 입력 필드의 현재 포커스 상태와 선택 상태를 저장
+                    const memoInput = document.getElementById(`memo-${id}`);
+                    let isFocused = false;
+                    let selectionStart = 0;
+                    let selectionEnd = 0;
+                    
+                    if (memoInput && document.activeElement === memoInput) {
+                        isFocused = true;
+                        selectionStart = memoInput.selectionStart;
+                        selectionEnd = memoInput.selectionEnd;
+                    }
+                    
+                    // 타이머 시간 표시 업데이트
                     timerElement.textContent = formatTime(hours, minutes, seconds);
                     timerCard.dataset.remainingMs = remainingMs;
+                    
+                    // 포커스와 선택 상태 복원 (메모 입력 중이었다면)
+                    if (isFocused && memoInput) {
+                        memoInput.focus();
+                        memoInput.setSelectionRange(selectionStart, selectionEnd);
+                    }
                     
                     // 현재 정렬 모드에 따라 타이머 정렬
                     if (sortMode !== 0) {
