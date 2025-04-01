@@ -3,26 +3,371 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="styles.css">
-    <title>타이머 설정</title>
+    <title>웹 타이머 애플리케이션</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        
+        header {
+            background-color: #4a90e2;
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        header h1 {
+            font-size: 32px;
+        }
+        
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            background-color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .input-container {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 10px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #3a80d2;
+        }
+        
+        .format-guide {
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .timers-section {
+            flex: 1;
+            padding: 20px;
+        }
+        
+        .timers-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .timer-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .timer-display {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            color: #333;
+        }
+        
+        .timer-info {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .expired {
+            background-color: #ffe6e6;
+            border: 1px solid #ffb3b3;
+        }
+        
+        .expired .timer-display {
+            color: #e53935;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header" id="a">타이머 설정</div>
-        <div class="input-area" id="b">
-            <input type="number" id="timerInput" maxlength="6" placeholder="6자리 숫자 입력">
-            <button id="setTimerBtn">타이머 등록</button>
-            <ul>
-                <li>1. 숫자를 입력한다</li>
-                <li>2. 타이머를 설정한다</li>
-            </ul>
+    <header>
+        <h1>웹 타이머 애플리케이션</h1>
+    </header>
+    
+    <section class="input-section">
+        <div class="input-container">
+            <input type="text" id="timeInput" maxlength="6" placeholder="여섯자리 숫자 입력 (HHMMSS)">
+            <button id="registerBtn">등록</button>
         </div>
-        <div class="timer-list" id="c">
-            <button id="sortBtn">정렬</button>
-            <div id="timers"></div>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
+        <p class="format-guide">형식: HHMMSS (예: 011234 = 1시간 12분 34초 + 5분 = 1시간 17분 34초)</p>
+    </section>
+    
+    <section class="timers-section">
+        <div class="timers-container" id="timersContainer"></div>
+    </section>
+    
+    <script>
+        // 웹 워커 지원 확인
+        if (window.Worker) {
+            // 알림 권한 요청
+            if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+            
+            // 타이머 데이터 객체
+            let timers = {};
+            let timerIdCounter = 0;
+            
+            // 웹 워커 생성
+            const timerWorker = new Worker(
+                URL.createObjectURL(
+                    new Blob([
+                        `
+                        // 타이머 데이터 저장
+                        let timers = {};
+                        
+                        // 1초마다 타이머 업데이트
+                        setInterval(() => {
+                            const now = Date.now();
+                            let updates = [];
+                            
+                            for (const id in timers) {
+                                const timer = timers[id];
+                                const remainingMs = Math.max(0, timer.endTime - now);
+                                
+                                if (remainingMs === 0 && !timer.notified) {
+                                    timer.notified = true;
+                                    updates.push({
+                                        id,
+                                        hours: 0,
+                                        minutes: 0,
+                                        seconds: 0,
+                                        expired: true
+                                    });
+                                } else if (!timer.notified) {
+                                    const totalSeconds = Math.floor(remainingMs / 1000);
+                                    const hours = Math.floor(totalSeconds / 3600);
+                                    const minutes = Math.floor((totalSeconds % 3600) / 60);
+                                    const seconds = totalSeconds % 60;
+                                    
+                                    updates.push({
+                                        id,
+                                        hours,
+                                        minutes,
+                                        seconds,
+                                        expired: false
+                                    });
+                                }
+                            }
+                            
+                            if (updates.length > 0) {
+                                postMessage({ type: 'updates', updates });
+                            }
+                        }, 1000);
+                        
+                        // 메인 스레드에서 메시지 수신
+                        onmessage = (e) => {
+                            const data = e.data;
+                            
+                            if (data.type === 'add') {
+                                timers[data.id] = {
+                                    endTime: data.endTime,
+                                    notified: false
+                                };
+                            } else if (data.type === 'remove') {
+                                delete timers[data.id];
+                            }
+                        };
+                        `
+                    ]), { type: 'application/javascript' }
+                )
+            );
+            
+            // 워커로부터 메시지 수신
+            timerWorker.onmessage = (e) => {
+                const data = e.data;
+                
+                if (data.type === 'updates') {
+                    data.updates.forEach(update => {
+                        updateTimerDisplay(
+                            update.id,
+                            update.hours,
+                            update.minutes,
+                            update.seconds
+                        );
+                        
+                        if (update.expired && !timers[update.id].notified) {
+                            timers[update.id].notified = true;
+                            notifyTimerExpired(update.id);
+                        }
+                    });
+                }
+            };
+            
+            // 타이머 등록 버튼 이벤트 리스너
+            document.getElementById('registerBtn').addEventListener('click', registerTimer);
+            
+            // Enter 키로 타이머 등록
+            document.getElementById('timeInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    registerTimer();
+                }
+            });
+            
+            // 타이머 등록 함수
+            function registerTimer() {
+                const timeInput = document.getElementById('timeInput');
+                const inputValue = timeInput.value.trim();
+                
+                // 유효성 검사
+                if (!/^\d{6}$/.test(inputValue)) {
+                    alert('여섯자리 숫자를 입력해주세요 (HHMMSS 형식)');
+                    return;
+                }
+                
+                // 입력값 파싱
+                const hours = parseInt(inputValue.substring(0, 2));
+                const minutes = parseInt(inputValue.substring(2, 4));
+                const seconds = parseInt(inputValue.substring(4, 6));
+                
+                // 시간 유효성 검사
+                if (hours > 23 || minutes > 59 || seconds > 59) {
+                    alert('유효한 시간을 입력해주세요 (시: 0-23, 분: 0-59, 초: 0-59)');
+                    return;
+                }
+                
+                // 타이머 ID 생성
+                const timerId = timerIdCounter++;
+                
+                // 종료 시간 계산 (입력 시간 + 5분)
+                const totalSeconds = hours * 3600 + minutes * 60 + seconds + 5 * 60;
+                const endTime = Date.now() + totalSeconds * 1000;
+                
+                // 타이머 객체 생성
+                timers[timerId] = {
+                    originalHours: hours,
+                    originalMinutes: minutes,
+                    originalSeconds: seconds,
+                    endTime: endTime,
+                    notified: false
+                };
+                
+                // 웹 워커에 타이머 추가 메시지 전송
+                timerWorker.postMessage({
+                    type: 'add',
+                    id: timerId,
+                    endTime: endTime
+                });
+                
+                // UI에 타이머 추가
+                addTimerToUI(timerId, hours, minutes, seconds);
+                
+                // 입력 필드 초기화
+                timeInput.value = '';
+            }
+            
+            // UI에 타이머 추가 함수
+            function addTimerToUI(id, hours, minutes, seconds) {
+                const timersContainer = document.getElementById('timersContainer');
+                
+                // 5분 추가된 시작 시간 계산
+                let startMinutes = minutes + 5;
+                let startHours = hours;
+                
+                if (startMinutes >= 60) {
+                    startHours++;
+                    startMinutes -= 60;
+                }
+                
+                const timerCard = document.createElement('div');
+                timerCard.className = 'timer-card';
+                timerCard.dataset.id = id;
+                timerCard.innerHTML = `
+                    <div class="timer-display" id="timer-${id}">
+                        ${formatTime(hours, startMinutes, seconds)}
+                    </div>
+                    <div class="timer-info">
+                        원래 설정: ${formatTime(hours, minutes, seconds)} + 5분
+                    </div>
+                `;
+                
+                timersContainer.prepend(timerCard);
+            }
+            
+            // 타이머 디스플레이 업데이트 함수
+            function updateTimerDisplay(id, hours, minutes, seconds) {
+                const timerElement = document.getElementById(`timer-${id}`);
+                
+                if (timerElement) {
+                    timerElement.textContent = formatTime(hours, minutes, seconds);
+                    
+                    // 만료된 타이머 스타일 적용
+                    const timerCard = document.querySelector(`.timer-card[data-id="${id}"]`);
+                    
+                    if (hours === 0 && minutes === 0 && seconds === 0) {
+                        timerCard.classList.add('expired');
+                    }
+                }
+            }
+            
+            // 시간 포맷팅 함수 (HH:MM:SS)
+            function formatTime(hours, minutes, seconds) {
+                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            // 타이머 종료 알림 함수
+            function notifyTimerExpired(id) {
+                // 알림 권한 확인
+                if (Notification.permission === 'granted') {
+                    const timer = timers[id];
+                    
+                    // 브라우저 알림 생성
+                    const notification = new Notification('타이머 종료!', {
+                        body: `${formatTime(timer.originalHours, timer.originalMinutes, timer.originalSeconds)} + 5분 타이머가 종료되었습니다.`,
+                        icon: 'https://cdn0.iconfinder.com/data/icons/small-n-flat/24/678116-calendar-clock-512.png'
+                    });
+                    
+                    // 10초 후 알림 닫기
+                    setTimeout(() => {
+                        notification.close();
+                    }, 10000);
+                }
+            }
+        } else {
+            alert('이 브라우저는 Web Worker를 지원하지 않습니다. 다른 브라우저를 사용해주세요.');
+        }
+    </script>
 </body>
 </html>
