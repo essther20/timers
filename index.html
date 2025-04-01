@@ -75,6 +75,22 @@
             color: #666;
             font-size: 14px;
             margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .sort-button {
+            padding: 10px 20px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .sort-button:hover {
+            background-color: #4cae4c;
         }
         
         .timers-section {
@@ -96,6 +112,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            position: relative;
         }
         
         .timer-display {
@@ -105,19 +122,30 @@
             color: #333;
         }
         
-        .timer-info {
-            text-align: center;
+        .timer-memo-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
             font-size: 14px;
-            color: #666;
         }
         
-        .expired {
-            background-color: #ffe6e6;
-            border: 1px solid #ffb3b3;
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #e53935;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
         }
         
-        .expired .timer-display {
-            color: #e53935;
+        .delete-btn:hover {
+            background-color: #d32f2f;
         }
     </style>
 </head>
@@ -132,6 +160,7 @@
             <button id="registerBtn">등록</button>
         </div>
         <p class="format-guide">형식: HHMMSS (예: 011234 = 1시간 12분 34초 + 5분 = 1시간 17분 34초)</p>
+        <button id="sortBtn" class="sort-button">정렬</button>
     </section>
     
     <section class="timers-section">
@@ -149,6 +178,7 @@
             // 타이머 데이터 객체
             let timers = {};
             let timerIdCounter = 0;
+            let sortMode = 0; // 0: 등록순, 1: 남은 시간 짧은 순, 2: 남은 시간 긴 순
             
             // 웹 워커 생성
             const timerWorker = new Worker(
@@ -162,6 +192,7 @@
                         setInterval(() => {
                             const now = Date.now();
                             let updates = [];
+                            let toRemove = [];
                             
                             for (const id in timers) {
                                 const timer = timers[id];
@@ -174,8 +205,10 @@
                                         hours: 0,
                                         minutes: 0,
                                         seconds: 0,
+                                        remainingMs: 0,
                                         expired: true
                                     });
+                                    toRemove.push(id);
                                 } else if (!timer.notified) {
                                     const totalSeconds = Math.floor(remainingMs / 1000);
                                     const hours = Math.floor(totalSeconds / 3600);
@@ -187,6 +220,7 @@
                                         hours,
                                         minutes,
                                         seconds,
+                                        remainingMs,
                                         expired: false
                                     });
                                 }
@@ -194,6 +228,10 @@
                             
                             if (updates.length > 0) {
                                 postMessage({ type: 'updates', updates });
+                            }
+                            
+                            if (toRemove.length > 0) {
+                                postMessage({ type: 'expired', ids: toRemove });
                             }
                         }, 1000);
                         
@@ -225,7 +263,8 @@
                             update.id,
                             update.hours,
                             update.minutes,
-                            update.seconds
+                            update.seconds,
+                            update.remainingMs
                         );
                         
                         if (update.expired && !timers[update.id].notified) {
@@ -233,11 +272,18 @@
                             notifyTimerExpired(update.id);
                         }
                     });
+                } else if (data.type === 'expired') {
+                    data.ids.forEach(id => {
+                        removeTimerFromUI(id);
+                    });
                 }
             };
             
             // 타이머 등록 버튼 이벤트 리스너
             document.getElementById('registerBtn').addEventListener('click', registerTimer);
+            
+            // 정렬 버튼 이벤트 리스너
+            document.getElementById('sortBtn').addEventListener('click', toggleSortTimers);
             
             // Enter 키로 타이머 등록
             document.getElementById('timeInput').addEventListener('keypress', (e) => {
@@ -245,6 +291,40 @@
                     registerTimer();
                 }
             });
+            
+            // 정렬 토글 함수
+            function toggleSortTimers() {
+                sortMode = (sortMode + 1) % 3;
+                sortTimers();
+            }
+            
+            // 타이머 정렬 함수
+            function sortTimers() {
+                const timersContainer = document.getElementById('timersContainer');
+                const timerCards = Array.from(timersContainer.getElementsByClassName('timer-card'));
+                
+                if (sortMode === 0) {
+                    // 등록 순서 (id 기준)
+                    timerCards.sort((a, b) => {
+                        return parseInt(a.dataset.id) - parseInt(b.dataset.id);
+                    });
+                } else if (sortMode === 1) {
+                    // 남은 시간 짧은 순
+                    timerCards.sort((a, b) => {
+                        return parseInt(a.dataset.remainingMs) - parseInt(b.dataset.remainingMs);
+                    });
+                } else {
+                    // 남은 시간 긴 순
+                    timerCards.sort((a, b) => {
+                        return parseInt(b.dataset.remainingMs) - parseInt(a.dataset.remainingMs);
+                    });
+                }
+                
+                // 재배치
+                timerCards.forEach(card => {
+                    timersContainer.appendChild(card);
+                });
+            }
             
             // 타이머 등록 함수
             function registerTimer() {
@@ -281,7 +361,8 @@
                     originalMinutes: minutes,
                     originalSeconds: seconds,
                     endTime: endTime,
-                    notified: false
+                    notified: false,
+                    memo: ''
                 };
                 
                 // 웹 워커에 타이머 추가 메시지 전송
@@ -292,14 +373,14 @@
                 });
                 
                 // UI에 타이머 추가
-                addTimerToUI(timerId, hours, minutes, seconds);
+                addTimerToUI(timerId, hours, minutes, seconds, totalSeconds * 1000);
                 
                 // 입력 필드 초기화
                 timeInput.value = '';
             }
             
             // UI에 타이머 추가 함수
-            function addTimerToUI(id, hours, minutes, seconds) {
+            function addTimerToUI(id, hours, minutes, seconds, remainingMs) {
                 const timersContainer = document.getElementById('timersContainer');
                 
                 // 5분 추가된 시작 시간 계산
@@ -314,30 +395,78 @@
                 const timerCard = document.createElement('div');
                 timerCard.className = 'timer-card';
                 timerCard.dataset.id = id;
+                timerCard.dataset.remainingMs = remainingMs;
+                
                 timerCard.innerHTML = `
+                    <button class="delete-btn" data-id="${id}">삭제</button>
                     <div class="timer-display" id="timer-${id}">
                         ${formatTime(hours, startMinutes, seconds)}
                     </div>
-                    <div class="timer-info">
-                        원래 설정: ${formatTime(hours, minutes, seconds)} + 5분
-                    </div>
+                    <input type="text" class="timer-memo-input" id="memo-${id}" placeholder="타이머 메모 입력" data-id="${id}">
                 `;
                 
                 timersContainer.prepend(timerCard);
+                
+                // 삭제 버튼 이벤트 리스너 추가
+                timerCard.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    const timerId = e.target.dataset.id;
+                    deleteTimer(timerId);
+                });
+                
+                // 메모 입력 이벤트 리스너 추가
+                timerCard.querySelector('.timer-memo-input').addEventListener('input', (e) => {
+                    const timerId = e.target.dataset.id;
+                    updateMemo(timerId, e.target.value);
+                });
+                
+                // 현재 정렬 모드에 따라 타이머 정렬
+                if (sortMode !== 0) {
+                    sortTimers();
+                }
+            }
+            
+            // 타이머 삭제 함수
+            function deleteTimer(id) {
+                // 웹 워커에 타이머 삭제 메시지 전송
+                timerWorker.postMessage({
+                    type: 'remove',
+                    id: id
+                });
+                
+                // UI에서 타이머 제거
+                removeTimerFromUI(id);
+                
+                // 타이머 객체에서 삭제
+                delete timers[id];
+            }
+            
+            // UI에서 타이머 제거 함수
+            function removeTimerFromUI(id) {
+                const timerCard = document.querySelector(`.timer-card[data-id="${id}"]`);
+                if (timerCard) {
+                    timerCard.remove();
+                }
+            }
+            
+            // 메모 업데이트 함수
+            function updateMemo(id, memo) {
+                if (timers[id]) {
+                    timers[id].memo = memo;
+                }
             }
             
             // 타이머 디스플레이 업데이트 함수
-            function updateTimerDisplay(id, hours, minutes, seconds) {
+            function updateTimerDisplay(id, hours, minutes, seconds, remainingMs) {
                 const timerElement = document.getElementById(`timer-${id}`);
+                const timerCard = document.querySelector(`.timer-card[data-id="${id}"]`);
                 
-                if (timerElement) {
+                if (timerElement && timerCard) {
                     timerElement.textContent = formatTime(hours, minutes, seconds);
+                    timerCard.dataset.remainingMs = remainingMs;
                     
-                    // 만료된 타이머 스타일 적용
-                    const timerCard = document.querySelector(`.timer-card[data-id="${id}"]`);
-                    
-                    if (hours === 0 && minutes === 0 && seconds === 0) {
-                        timerCard.classList.add('expired');
+                    // 현재 정렬 모드에 따라 타이머 정렬
+                    if (sortMode !== 0) {
+                        sortTimers();
                     }
                 }
             }
@@ -352,10 +481,11 @@
                 // 알림 권한 확인
                 if (Notification.permission === 'granted') {
                     const timer = timers[id];
+                    const memo = timer.memo.trim() || `${formatTime(timer.originalHours, timer.originalMinutes, timer.originalSeconds)}+5분`;
                     
                     // 브라우저 알림 생성
                     const notification = new Notification('타이머 종료!', {
-                        body: `${formatTime(timer.originalHours, timer.originalMinutes, timer.originalSeconds)} + 5분 타이머가 종료되었습니다.`,
+                        body: `${memo} 타이머가 종료되었습니다.`,
                         icon: 'https://cdn0.iconfinder.com/data/icons/small-n-flat/24/678116-calendar-clock-512.png'
                     });
                     
