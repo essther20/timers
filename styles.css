@@ -1,0 +1,244 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: #f5f5f5;
+}
+
+/* Header Styles */
+header {
+    background-color: #4a90e2;
+    color: white;
+    text-align: center;
+    padding: 20px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    font-size: 32px;
+}
+
+/* Input Section Styles */
+.input-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    max-width: 400px;
+    margin-bottom: 10px;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    transition: border-color 0.3s ease;
+}
+
+input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+/* Button Styles */
+button {
+    padding: 12px 24px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #3a80d2;
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+/* Format Guide */
+.format-guide {
+    color: #666;
+    font-size: 14px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* Sort Container */
+.sort-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-button {
+    padding: 10px 20px;
+    background-color: #5cb85c;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s ease;
+}
+
+.sort-button:hover {
+    background-color: #4cae4c;
+}
+
+.sort-status {
+    color: #333;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Timers Section */
+.timers-section {
+    flex: 1;
+    padding: 20px;
+}
+
+.timers-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Timer Card Styles */
+.timer-card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.timer-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.timer-display {
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+    color: #333;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+}
+
+.timer-memo-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.timer-memo-input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+.delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #e53935;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.delete-btn:hover {
+    background-color: #d32f2f;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .input-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .timers-container {
+        grid-template-columns: 1fr;
+    }
+    
+    header h1 {
+        font-size: 24px;
+    }
+    
+    .timer-display {
+        font-size: 24px;
+    }
+}
+
+/* Animation for new timer cards */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.timer-card.new {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Expired timer styling */
+.timer-card.expired {
+    border: 2px solid #e53935;
+    background-color: #ffebee;
+}
+
+.timer-card.expired .timer-display {
+    color: #e53935;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
